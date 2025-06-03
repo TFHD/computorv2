@@ -7,20 +7,35 @@
 # include <algorithm>
 # include <regex>
 # include <vector>
+# include "Complex.hpp"
+# include "Matrice.hpp"
+# include <readline/readline.h>
+# include <readline/history.h>
+# include <iomanip>
 
-enum TokenType {
-    VARIABLE,
-    NUMBER,
-    OPERATOR
-};
+enum TokenType { NUMBER, OPERATOR, PAREN_LEFT, PAREN_RIGHT, VARIABLE, FUNCTION, MATRICE, NO_TYPE };
 
 struct Token {
-    std::string value;
-    TokenType type;
+    TokenType type = NO_TYPE;
+    std::string var = "0";
+    std::string functionVar = "";
+    double value = 0;
+    char op = '0';
+    Complex cplx_value = 0;
+    Matrice mat = {};
 };
 
-struct Lexer {
-    std::vector<Token> tokens;
+enum ValueType { SCALAR, MATRIX, COMPLEX };
+
+struct Value {
+    ValueType type;
+    double scalar;
+    Complex cplx;
+    Matrice matrix;
+
+    Value(double d) : type(ValueType::SCALAR), scalar(d) {}
+    Value(const Matrice& m) : type(ValueType::MATRIX), matrix(m) {}
+    Value(const Complex& cplx) : type(ValueType::COMPLEX), cplx(cplx) {}
 };
 
 enum type {
@@ -29,36 +44,33 @@ enum type {
     MATRICIAL_EXPR,
     POLYNOMIAL_EXPR,
     FUNCTION_EXPR,
-};
-
-struct complex {
-
-    double x;
-    double y;
+    RESOLUTION_EXPR
 };
 
 struct data {
     std::string expr;
+    std::string functionVar;
     int type;
-    complex complex = {0, 0};
-    int x = 0;
+    std::vector<Token> tokens;
 };
 
 class Computor {
 
     private :
         std::map<std::string, data> map;
-        Lexer lexer;
     public :
         Computor(void);
         ~Computor(void);
         void parsingExpr(std::string &text);
         void printMap(void);
-        bool createToken(std::string &str);
-        void ParseToToken(std::string &expr);
-        data determineType(std::string &name, std::string &expr);
+
+        Value evalRPN(const std::vector<Token> &rpn);
+
+        bool ParseToToken(std::string &expr, std::vector<Token> &tokens);
+        void insertInfosInMap(std::string &name, data &data);
+        bool functionHandler(std::string &name, std::string &expr, data &data);
+        bool extractVariables(std::vector<Token> &tokens);
+        std::vector<Token> toRPN(const std::vector<Token> &tokens);
 };
-
-
 
 #endif

@@ -16,7 +16,7 @@ OBJS_BONUS	:=	$(patsubst %.cpp, $(DIR_BONUS)%.o, $(SRCS_BONUS))
 
 CC			:= c++
 
-FLAGS 		:= -Wall -Werror -Wextra -I ./includes/
+FLAGS 		:= -Wall -Werror -Wextra -g -I ./includes/
 FLAGS_BONUS := -Wall -Werror -Wextra -g -I ./includes/bonus/
 
 TPUT 					= tput -T xterm-256color
@@ -38,7 +38,7 @@ CURR_OBJ	= 0
 all: ${NAME}
 
 ${NAME}: ${OBJS}
-	@${CC} ${FLAGS} -o ${NAME} ${OBJS}
+	@${CC} ${FLAGS} -o ${NAME} ${OBJS} -lreadline
 	@printf "$(_BOLD)$(NAME)$(_RESET) compiled $(_GREEN)$(_BOLD)successfully$(_RESET)\n\n"
 
 ${DIR}%.o: ${DIR}%.cpp
@@ -52,6 +52,9 @@ ${DIR_BONUS}%.o: ${DIR_BONUS}%.cpp
 	@$(eval CURR_OBJ=$(shell echo $$(( $(CURR_OBJ) + 1 ))))
 	@$(eval PERCENT=$(shell echo $$(( $(CURR_OBJ) * 100 / $(OBJS_TOTAL) ))))
 	@printf "$(_GREEN)($(_BOLD)%3s%%$(_RESET)$(_GREEN)) $(_RESET)Compiling $(_BOLD)$(_PURPLE)$<$(_RESET)\n" "$(PERCENT)"
+
+val :
+	@bash -c 'valgrind --leak-check=full --leak-check=full --suppressions=readline.supp ./computorv2'
 
 bonus: ${OBJS_BONUS}
 	@${CC} ${FLAGS_BONUS} -o ${NAME_BONUS} ${OBJS_BONUS}
