@@ -50,6 +50,8 @@ class Matrice {
             return r;
         }
         Matrice operator/(double d) const {
+            if (!d)
+                throw std::runtime_error("Error : division by 0 is forbidden");
             Matrice r = *this;
             for (auto& row : r.mat) for (auto& val : row) val /= d;
             return r;

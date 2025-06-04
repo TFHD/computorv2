@@ -12,8 +12,9 @@
 # include <readline/readline.h>
 # include <readline/history.h>
 # include <iomanip>
+# include <sstream>
 
-enum TokenType { NUMBER, OPERATOR, PAREN_LEFT, PAREN_RIGHT, VARIABLE, FUNCTION, MATRICE, NO_TYPE };
+enum TokenType { NUMBER, OPERATOR, PAREN_LEFT, PAREN_RIGHT, VARIABLE, FUNCTION, MATRICE, COMPLEXS, NO_TYPE };
 
 struct Token {
     TokenType type = NO_TYPE;
@@ -21,7 +22,7 @@ struct Token {
     std::string functionVar = "";
     double value = 0;
     char op = '0';
-    Complex cplx_value = 0;
+    Complex cplx_value = {};
     Matrice mat = {};
 };
 
@@ -66,7 +67,8 @@ class Computor {
 
         Value evalRPN(const std::vector<Token> &rpn);
 
-        bool ParseToToken(std::string &expr, std::vector<Token> &tokens);
+        void polynomeHandler(std::string &name, std::vector<Token> &tokens);
+        bool ParseToToken(std::string &expr, std::vector<Token> &tokens, type type);
         void insertInfosInMap(std::string &name, data &data);
         bool functionHandler(std::string &name, std::string &expr, data &data);
         bool extractVariables(std::vector<Token> &tokens);

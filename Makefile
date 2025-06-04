@@ -3,6 +3,7 @@ NAME_BONUS	:=	computor_bonus
 
 SRCS		:= 	main.cpp \
 				Computor.cpp \
+				Polynome_bonus.cpp \
 
 SRCS_BONUS	:=	Polynome_bonus.cpp \
 				main_bonus.cpp \
