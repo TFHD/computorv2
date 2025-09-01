@@ -31,6 +31,7 @@ void Polynome::adaptExpr(std::string &expr)
             expr.insert(pos + 1, 1, '^');
             expr.insert(pos + 2, 1, '1');
         }
+        std::cout << pos << std::endl;
         pos = expr.find("X", i);
         if (expr[pos - 1] != '*') {
             expr.insert(pos, 1, '*');

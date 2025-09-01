@@ -26,7 +26,7 @@ int main() {
             break;
         std::string text = input;
         computor.parsingExpr(text);
-        //computor.printMap();
+        computor.printMap();
         free(input);
     }
     rl_clear_history();

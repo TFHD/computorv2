@@ -115,6 +115,14 @@ std::string str_toupper(std::string str) {
     return new_str;
 }
 
+bool isAlphaString(std::string &str) {
+    for (char c : str) {
+        if (!std::isalpha(c))
+            return false;
+    }
+    return true;
+}
+
 void Computor::insertInfosInMap(std::string &name, data &data) {
     if (this->map.find(name) == this->map.end()) {
         this->map.insert({name, data});
@@ -336,7 +344,8 @@ std::vector<Token> Computor::toRPN(const std::vector<Token> &tokens) {
     for (const auto &token : tokens) {
         if (token.type == TokenType::NUMBER ||
             token.type == TokenType::MATRICE ||
-            token.type == TokenType::COMPLEXS)
+            token.type == TokenType::COMPLEXS ||
+            token.type == TokenType::VARIABLE)
                 output.push_back(token);
         else if (token.type == OPERATOR) {
             while (!ops.empty() && ops.top().type == OPERATOR) {
@@ -404,8 +413,11 @@ Value apply_op(const Value &a, const Value &b, char op) {
             return Value(a.cplx * b.cplx);
         throw std::runtime_error("Multiplication: incompatible types");
     case '/':
-        if (a.type == ValueType::SCALAR && b.type == ValueType::SCALAR) 
+        if (a.type == ValueType::SCALAR && b.type == ValueType::SCALAR) {
+            if (b.scalar == 0)
+                throw std::runtime_error("Division by zero is forbidden");
             return Value(a.scalar / b.scalar);
+        }
         if (a.type == ValueType::MATRIX && b.type == ValueType::SCALAR) 
             return Value(a.matrix / b.scalar);
         if (a.type == ValueType::SCALAR && b.type == ValueType::COMPLEX)
@@ -448,58 +460,76 @@ Value Computor::evalRPN(const std::vector<Token> &rpn) {
         } else if (token.type == TokenType::COMPLEXS) {
             s.push(Value(token.cplx_value));
         } else if (token.type == OPERATOR) {
-            if (s.size() <= 1) throw std::runtime_error("invalid expression");
+            if (s.size() <= 1) throw std::runtime_error("invalid expression RPN");
             Value b = s.top(); s.pop();
             Value a = s.top(); s.pop();
             s.push(apply_op(a, b, token.op));
         }
     }
-    if (s.size() != 1) throw std::runtime_error("invalid expression");
+    if (s.size() != 1) throw std::runtime_error("invalid expression RPN 2");
     return s.top();
 }
 
 bool Computor::extractVariables(std::vector<Token> &tokens) {
-    std::map<std::string, size_t> varName;
-    for (size_t i = 0; i < tokens.size(); i++) {
-        if ((tokens[i].type == TokenType::VARIABLE && tokens[i].var != "i") || tokens[i].type == TokenType::FUNCTION)
-            varName.insert({tokens[i].var, i});
+    bool replaced = false;
+    for (size_t i = 0; i < tokens.size(); ++i) {
+        // On ne traite pas "i" ni les variables déjà résolues
+        if (tokens[i].type == TokenType::VARIABLE && tokens[i].var != "i") {
+            std::string varUp = str_toupper(tokens[i].var);
+            auto it = this->map.find(varUp);
+            if (it != this->map.end()) {
+                // On remplace la variable par ses tokens définis dans la map
+                for (auto token : it->second.tokens)
+                    if (str_toupper(token.var) == varUp) {
+                        std::cout << "caca" << std::endl;
+                        return true;
+                    }
+                tokens.erase(tokens.begin() + i);
+                tokens.insert(tokens.begin() + i, it->second.tokens.begin(), it->second.tokens.end());
+                replaced = true;
+                // On repart du début car le vecteur a changé
+                i = -1;
+                std::cout << i << std::endl;
+            }
+            // sinon on laisse la variable telle quelle
+        } else if (tokens[i].type == TokenType::FUNCTION) {
+            // On tente de remplacer la fonction si elle est définie
+            std::string funcNameUp = str_toupper(tokens[i].var);
+            auto it = this->map.find(funcNameUp);
+            if (it != this->map.end()) {
+                printTable(it->second.tokens);
+                // On parse les arguments de la fonction appelante
+                std::vector<Token> token_args;
+                ParseToToken(tokens[i].functionVar, token_args, RATIONAL_EXPR);
+
+                // Remplacement dans la fonction appelée
+                std::vector<Token> resFunctionToken;
+                for (auto& funcToken : it->second.tokens) {
+                    if (funcToken.type == TokenType::VARIABLE &&
+                        str_toupper(funcToken.var) == it->second.functionVar) {
+                        // Remplacer paramètre formel par l'argument effectif
+                        resFunctionToken.insert(resFunctionToken.end(), token_args.begin(), token_args.end());
+                        printTable(resFunctionToken);
+                    } else {
+                        if (funcToken.type == TokenType::FUNCTION)
+                            funcToken.functionVar = tokens[i].functionVar;
+                        resFunctionToken.push_back(funcToken);
+                    }
+                }
+                tokens.erase(tokens.begin() + i);
+                tokens.insert(tokens.begin() + i, resFunctionToken.begin(), resFunctionToken.end());
+                replaced = true;
+                i = -1;
+            }
+            // sinon on laisse la fonction telle quelle
+        }
     }
-    if (varName.size() == 0) {
+    // S'il n'y avait aucune variable/fonction à remplacer, tenter le handler Complexe
+    if (!replaced) {
         ComplexHandler(tokens);
         return true;
     }
-    for (auto &pair : varName) {
-        if (pair.first != "i" && this->map.find(str_toupper(pair.first)) == this->map.end()) {
-            throw std::runtime_error("Error : " + pair.first + " is not definited !");
-            return false;
-        }
-        const auto it = this->map.find(str_toupper(pair.first));
-        for (size_t i = 0; i < tokens.size(); i++) {
-            if (tokens[i].type == TokenType::VARIABLE || tokens[i].type == TokenType::FUNCTION) {
-                if (tokens[i].type == TokenType::FUNCTION) {
-                    std::vector<Token> token_args;
-                    std::vector<Token> resFunctionToken;
-                    ParseToToken(tokens[i].functionVar, token_args, RATIONAL_EXPR);
-                    for (size_t i = 0; i < it->second.tokens.size(); i++) { // fa(x) = x^2; fb(x) = fa(x) ; fb(1) marche pas
-                        if (it->second.tokens[i].type == TokenType::VARIABLE && str_toupper(it->second.tokens[i].var) == it->second.functionVar) {
-                            for (size_t j = 0; j < token_args.size(); j++) {
-                                resFunctionToken.push_back(token_args[j]);
-                            }
-                        }
-                        else
-                            resFunctionToken.push_back(it->second.tokens[i]);
-                    }
-                    tokens.erase(tokens.begin() + i);
-                    tokens.insert(tokens.begin() + i, resFunctionToken.begin(), resFunctionToken.end());
-                    return false;
-                }
-                pair.second = i;
-                break;
-            }
-        }
-        tokens.erase(tokens.begin() + pair.second);
-        tokens.insert(tokens.begin() + pair.second, it->second.tokens.begin(), it->second.tokens.end());
-    }
+    // Indique qu'il reste potentiellement des variables à résoudre
     return false;
 }
 
@@ -507,6 +537,7 @@ bool Computor::functionHandler(std::string &name, std::string &expr, data &data)
     std::regex name_expr("^([a-zA-Z]+)(\\()([a-zA-Z]+)(\\))$");
     if (std::regex_match(name, name_expr)) {
         data.type = FUNCTION_EXPR;
+        std::cout << "Function found: " << name << std::endl;
         auto words_begin = std::sregex_iterator(name.begin(), name.end(), name_expr);
         auto words_end = std::sregex_iterator();
         std::smatch match = *words_begin;
@@ -568,7 +599,7 @@ std::string BetterPrint(std::string str) {
 void Computor::polynomeHandler(std::string &name, std::vector<Token> &tokens) {
     std::vector<Token> nameTokens;
     std::string varFunction = "";
-    if (!ParseToToken(name, nameTokens, RESOLUTION_EXPR)) { std::cout << "invalid expression" << std::endl; return; }
+    if (!ParseToToken(name, nameTokens, RESOLUTION_EXPR)) { std::cout << "invalid expression Token polynom" << std::endl; return; }
     for (size_t i = 0; i < nameTokens.size(); i++) {
         if (nameTokens[i].type == TokenType::FUNCTION)
             varFunction = nameTokens[i].functionVar;
@@ -588,6 +619,38 @@ void Computor::polynomeHandler(std::string &name, std::vector<Token> &tokens) {
     catch (std::exception &e) { std::cout << e.what() << std::endl; }
 }
 
+bool isWithVariable(TokenType type, char op) {
+    if (type == TokenType::OPERATOR && (op == '+' || op == '-'))
+        return false;
+    return true;
+}
+
+bool ReducePrintForm(std::vector<Token> &tokens) {
+    std::vector<Token> res;
+    int start = 0;
+    int end = 0;
+    int index = -1;
+
+    for (size_t i = 0; i < tokens.size(); i++)
+        if (tokens[i].type == TokenType::VARIABLE) { index = i; break; }
+    
+    if (index == -1)
+        return false;
+
+    for (int i = index - 1; i >= 0; i--) {
+        if (isWithVariable(tokens[i].type, tokens[i].op) || i == index - 1) { start = i;}
+        else break;
+    }
+
+    for (int i = index + 1; i < (int)tokens.size(); i++) {
+        if (isWithVariable(tokens[i].type, tokens[i].op) || i == index + 1) { end = i;}
+        else break;
+    }
+    std::cout << start << std::endl;
+    std::cout << end << std::endl;
+    return true;
+}
+
 void Computor::parsingExpr(std::string &text) {
     std::string before = text;
     std::vector<Token> forRPNRead;
@@ -596,7 +659,7 @@ void Computor::parsingExpr(std::string &text) {
     unsigned long it = text.find('=');
     if (it == std::string::npos){
         if (this->map.find(str_toupper(text)) == this->map.end())
-            std::cout << "invalid expression" << std::endl;
+            std::cout << "invalid expression variable not found" << std::endl;
         else {
             auto ite = this->map.find(str_toupper(text));
             std::cout << ite->second.expr << std::endl;
@@ -606,7 +669,7 @@ void Computor::parsingExpr(std::string &text) {
 
     std::string name = str_toupper(text.substr(0, it));
     std::string expr = text.substr(it + 1, text.length());
-    if (!expr.length() || !CheckParenthesis(text)) { std::cout << "invalid expression" << std::endl; return; }
+    if (!expr.length() || !CheckParenthesis(text)) { std::cout << "invalid expression parenthesis" << std::endl; return; }
     data data;
 
     data.type = RATIONAL_EXPR;
@@ -624,12 +687,12 @@ void Computor::parsingExpr(std::string &text) {
         }
     }
     if (data.type != type::POLYNOMIAL_EXPR)
-        if (!functionHandler(name, expr, data)) { std::cout << "invalid expression" << std::endl; return; }
+        if (!functionHandler(name, expr, data)) { std::cout << "invalid expression function handler" << std::endl; return; }
     if (data.type == type::FUNCTION_EXPR) {
         std::cout << BetterPrint(expr) << std::endl;
         return;
     }
-    if (!ParseToToken(expr, data.tokens, RATIONAL_EXPR)) { printTable(data.tokens); std::cout << "invalid expression" << std::endl; return; }
+    if (!ParseToToken(expr, data.tokens, RATIONAL_EXPR)) { printTable(data.tokens); std::cout << "invalid expression tokenizer" << std::endl; return; }
     if (!hasVariable(data.tokens))
     {
         if (data.type == type::POLYNOMIAL_EXPR) {
@@ -637,7 +700,6 @@ void Computor::parsingExpr(std::string &text) {
             return;
         }
         forRPNRead = toRPN(data.tokens);
-        // printTable(forRPNRead);
         try {
             Value val = evalRPN(forRPNRead);
             printFormat(val);
@@ -648,12 +710,19 @@ void Computor::parsingExpr(std::string &text) {
         }
     } else {
         try {
-            while (!extractVariables(data.tokens));
+            std::vector<Token> TokenDataCopy = data.tokens;
+            printTable(TokenDataCopy);
+            if (!isAlphaString(name) && data.type == type::RATIONAL_EXPR)
+                { std::cout << "a variable can contain only letter" << std::endl; return; }
+            while (!extractVariables(TokenDataCopy));
             if (data.type == type::POLYNOMIAL_EXPR) {
-                polynomeHandler(name, data.tokens);
+                polynomeHandler(name, TokenDataCopy);
                 return;
             }
-            forRPNRead = toRPN(data.tokens);
+            printTable(TokenDataCopy);
+            //ReducePrintForm(TokenDataCopy);
+            forRPNRead = toRPN(TokenDataCopy);
+            printTable(forRPNRead);
             Value val = evalRPN(forRPNRead);
             printFormat(val);
         } catch (const std::exception &e) {
@@ -662,10 +731,10 @@ void Computor::parsingExpr(std::string &text) {
             return;
         }
     }
-    if (data.type != type::RESOLUTION_EXPR || data.type != type::POLYNOMIAL_EXPR)
+    if (data.type != type::RESOLUTION_EXPR && data.type != type::POLYNOMIAL_EXPR)
         insertInfosInMap(name, data);
-}
 
+}
 void Computor::printMap(void) {
     for (auto it = this->map.begin(); it != this->map.end(); ++it) {
         std::cout << " {" << it->first << ", " << it->second.expr << "} " << std::endl;

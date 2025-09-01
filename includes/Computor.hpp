@@ -26,17 +26,19 @@ struct Token {
     Matrice mat = {};
 };
 
-enum ValueType { SCALAR, MATRIX, COMPLEX };
+enum ValueType { SCALAR, MATRIX, COMPLEX, SYMBOLIC };
 
 struct Value {
     ValueType type;
     double scalar;
     Complex cplx;
     Matrice matrix;
+    std::string symbolic_expr;
 
     Value(double d) : type(ValueType::SCALAR), scalar(d) {}
     Value(const Matrice& m) : type(ValueType::MATRIX), matrix(m) {}
     Value(const Complex& cplx) : type(ValueType::COMPLEX), cplx(cplx) {}
+    Value(const std::string& expr) : type(ValueType::SYMBOLIC), symbolic_expr(expr) {}
 };
 
 enum type {

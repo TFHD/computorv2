@@ -1,9 +1,53 @@
 {
-   readline_leak
+   readline_leak_1
    Memcheck:Leak
    match-leak-kinds: reachable
    fun:malloc
    fun:xmalloc
-   fun:rl_add_history
+   fun:initialize_readline
    fun:readline
+}
+
+{
+   readline_leak_2
+   Memcheck:Leak
+   match-leak-kinds: reachable
+   ...
+   fun:malloc
+   fun:xmalloc
+   fun:_rl_init_eof_markers
+   fun:initialize_readline
+}
+
+{
+   readline_leak_3
+   Memcheck:Leak
+   match-leak-kinds: reachable
+   ...
+   fun:malloc
+   fun:xmalloc
+   fun:_rl_init_terminal_io
+   fun:initialize_readline
+}
+
+{
+   readline_leak_4
+   Memcheck:Leak
+   match-leak-kinds: reachable
+   ...
+   fun:malloc
+   fun:xmalloc
+   fun:_rl_init_keymaps
+   fun:initialize_readline
+}
+
+{
+   readline_leak_5
+   Memcheck:Leak
+   match-leak-kinds: reachable
+   ...
+   fun:malloc
+   fun:xmalloc
+   fun:_rl_init_funmap_names
+   fun:initialize_readline
 }

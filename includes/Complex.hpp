@@ -75,16 +75,16 @@ class Complex {
             this->im = im;
         }
 
+        friend std::ostream &operator<<(std::ostream &o, const Complex &cplx) {
+            if (cplx.getIm() == 0)
+                o << cplx.getRe();
+            else if (cplx.getIm() < 0)
+                o << cplx.getRe() << " - " << -cplx.getIm() << "i";
+            else if (cplx.getIm() > 0)
+                o << cplx.getRe() << " + " << cplx.getIm() << "i";
+            return (o);
+        }
 };
 
-std::ostream &operator<<(std::ostream &o, const Complex &cplx) {
-    if (cplx.getIm() == 0)
-        o << cplx.getRe();
-    else if (cplx.getIm() < 0)
-        o << cplx.getRe() << " - " << -cplx.getIm() << "i";
-    else if (cplx.getIm() > 0)
-        o << cplx.getRe() << " + " << cplx.getIm() << "i";
-    return (o);
-}
 
 #endif
