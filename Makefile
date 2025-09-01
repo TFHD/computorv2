@@ -2,8 +2,12 @@ NAME		:=	computorv2
 NAME_BONUS	:=	computor_bonus
 
 SRCS		:= 	main.cpp \
-				Computor.cpp \
+				Token.cpp \
+				Rpn.cpp \
 				Polynome_bonus.cpp \
+				Computor.cpp \
+				utils/Utils.cpp \
+				utils/Debug.cpp \
 
 SRCS_BONUS	:=	Polynome_bonus.cpp \
 				main_bonus.cpp \
@@ -12,8 +16,11 @@ DIR			:=	srcs/
 
 DIR_BONUS	:=	srcs/bonus/
 
-OBJS		:=	$(patsubst %.cpp, $(DIR)%.o, $(SRCS))
-OBJS_BONUS	:=	$(patsubst %.cpp, $(DIR_BONUS)%.o, $(SRCS_BONUS))
+BUILD_DIR := .build/
+
+OBJS		:=	$(SRCS:%.cpp=$(BUILD_DIR)%.o)
+OBJS_BONUS	:=	$(SRCS_BONUS:%.cpp=$(BUILD_DIR)%.o)
+
 
 CC			:= c++
 
@@ -42,13 +49,15 @@ ${NAME}: ${OBJS}
 	@${CC} ${FLAGS} -o ${NAME} ${OBJS} -lreadline
 	@printf "$(_BOLD)$(NAME)$(_RESET) compiled $(_GREEN)$(_BOLD)successfully$(_RESET)\n\n"
 
-${DIR}%.o: ${DIR}%.cpp
+${BUILD_DIR}%.o: ${DIR}%.cpp
+	@mkdir -p $(dir $@)
 	@${CC} ${FLAGS} -o $@ -c $<
 	@$(eval CURR_OBJ=$(shell echo $$(( $(CURR_OBJ) + 1 ))))
 	@$(eval PERCENT=$(shell echo $$(( $(CURR_OBJ) * 100 / $(OBJS_TOTAL) ))))
 	@printf "$(_GREEN)($(_BOLD)%3s%%$(_RESET)$(_GREEN)) $(_RESET)Compiling $(_BOLD)$(_PURPLE)$<$(_RESET)\n" "$(PERCENT)"
 
-${DIR_BONUS}%.o: ${DIR_BONUS}%.cpp
+${BUILD_DIR}%.o: ${DIR_BONUS}%.cpp
+	@mkdir -p $(dir $@)
 	@${CC} ${FLAGS_BONUS} -o $@ -c $<
 	@$(eval CURR_OBJ=$(shell echo $$(( $(CURR_OBJ) + 1 ))))
 	@$(eval PERCENT=$(shell echo $$(( $(CURR_OBJ) * 100 / $(OBJS_TOTAL) ))))
@@ -62,7 +71,7 @@ bonus: ${OBJS_BONUS}
 	@printf "$(_BOLD)$(NAME_BONUS)$(_RESET) compiled $(_GREEN)$(_BOLD)successfully$(_RESET)\n\n"
 
 clean:
-	@rm -rf ${OBJS} ${OBJS_BONUS}
+	@rm -rf ${OBJS} ${BUILD_DIR}
 	@printf "\n$(_BOLD)All objects are $(_GREEN)cleaned $(_RESET)! 🎉\n\n"
 
 fclean: clean

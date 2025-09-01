@@ -1,4 +1,5 @@
-#include "../includes/Computor.hpp"
+#include "Computor.hpp"
+#include <cstdlib>
 
 // bool    my_readline(std::string &str, std::string prompt) {
 
@@ -19,6 +20,10 @@ int main() {
     Computor computor;
     char *input;
     while ((input = readline("> ")) != nullptr) {
+        if (std::string(input) == "clear") {
+            system("clear");
+            continue;
+    }
         if (*input) {
             add_history(input);
         }
