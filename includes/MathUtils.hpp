@@ -52,6 +52,15 @@ struct Math {
             return 1 / res;
         return res;
     }
+
+    static double mod(double x, double y) {
+        if (y == 0.0)
+            return 0.0;
+        int intX = (int)x;
+        int intY = (int)y;
+        
+        return intX % intY;
+    }
 };
 
 #endif

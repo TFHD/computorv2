@@ -1,37 +1,30 @@
 #include "Computor.hpp"
 #include <cstdlib>
 
-// bool    my_readline(std::string &str, std::string prompt) {
-
-//     str.clear();
-//     while (str.empty()) {
-//         std::cout << prompt;
-//         std::getline(std::cin, str);
-//         if (std::cin.eof()) {
-//             std::cout << std::endl;
-//             return true;
-//         }
-//     }
-//     return false;
-// }
-
 int main() {
 
     Computor computor;
     char *input;
+    using_history();
     while ((input = readline("> ")) != nullptr) {
         if (std::string(input) == "clear") {
             system("clear");
+            free(input);
             continue;
-    }
-        if (*input) {
-            add_history(input);
         }
-        if (std::string(input) == "exit")
+        if (std::string(input) == "printmap") {
+            computor.printMap();
+            free(input);
+            continue;
+        }
+        if (*input)
+            add_history(input);
+        if (std::string(input) == "exit") {
+            free(input);
             break;
+        }
         std::string text = input;
         computor.parsingExpr(text);
-        computor.printMap();
         free(input);
     }
     rl_clear_history();

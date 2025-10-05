@@ -31,7 +31,6 @@ void Polynome::adaptExpr(std::string &expr)
             expr.insert(pos + 1, 1, '^');
             expr.insert(pos + 2, 1, '1');
         }
-        std::cout << pos << std::endl;
         pos = expr.find("X", i);
         if (expr[pos - 1] != '*') {
             expr.insert(pos, 1, '*');
@@ -137,9 +136,7 @@ double Polynome::my_sqrt(double x) {
 
 void Polynome::printSolutions(void)
 {  
-    if (getPolynomeDegree() > 0)
     if (getPolynomeDegree() > 2) {
-        std::cout << "The polynomial degree is strictly greater than 2, I can't solve." << std::endl;
         return;
     }
     if (!getA() && !getB() && !getC()) {
@@ -177,7 +174,6 @@ void Polynome::printSolutions(void)
         int pgcds = 1;
         int pgcd1 = fabs(pgcd(getB(), 2 * getA()));
         int pgcd2 = fabs(pgcd(my_sqrt(-determinant), 2 * getA()));
-        std::cout << pgcd1 << " " << pgcd2 << std::endl;
         int sqrt_determinant = my_sqrt(-determinant);
         if (pgcd1 == pgcd2 && (int)pow(my_sqrt(getB()), 2) == (int)getB() && (int)pow(sqrt_determinant, 2) == (int)-determinant)
             pgcds = pgcd1;

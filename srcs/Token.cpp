@@ -37,7 +37,7 @@ int Token::matriceHandler(std::string expr, Tokens &tokens) {
     return 0;
 }
 
-bool Token::ComplexHandler(Tokens &tokens) {
+bool Token::complexHandler(Tokens &tokens) {
     bool    isComplex = false;
     int     complexIndex = 0;
     for (size_t i = 0; i < tokens.size(); i++) {
@@ -81,11 +81,11 @@ bool Token::ComplexHandler(Tokens &tokens) {
     } else {
         return false;
     }
-    ComplexHandler(tokens);
+    complexHandler(tokens);
     return true;
 }
 
-std::string Token::TokenToString(Tokens &tokens) {
+std::string Token::tokenToString(Tokens &tokens) {
     std::string res = "";
     for (size_t i = 0; i < tokens.size(); i++) {
         if (tokens[i].type == TokenType::NUMBER) {
@@ -101,7 +101,8 @@ std::string Token::TokenToString(Tokens &tokens) {
     return res;
 }
 
-bool Token::ParseToToken(std::string &expr, Tokens &tokens, ExpressionType type) {
+bool Token::parseToToken(std::string &expr, Tokens &tokens, ExpressionType type) {
+    tokens.clear();
     for (size_t i = 0; i < expr.size();) {
         if (std::isalpha(expr[i])) {
             size_t j = i;
@@ -120,7 +121,7 @@ bool Token::ParseToToken(std::string &expr, Tokens &tokens, ExpressionType type)
             tokens.push_back({PAREN_RIGHT});
             i = j;
         }
-        else if (std::isdigit(expr[i]) || expr[i] == '.') {
+        else if (std::isdigit(expr[i]) || (expr[i] == '.' && i + 1 < expr.size() && std::isdigit(expr[i + 1]))) {
             size_t j = i;
             while (j < expr.size() && (std::isdigit(expr[j]) || expr[j] == '.'))
                 ++j;
@@ -141,7 +142,7 @@ bool Token::ParseToToken(std::string &expr, Tokens &tokens, ExpressionType type)
             tokens.push_back({PAREN_RIGHT});
             ++i;
         } else if (isOperator(expr[i])){
-            if (i + 1 < expr.size() && (std::isdigit(expr[i + 1]) || std::isalpha(expr[i + 1])) && (expr[i] == '-' || expr[i] == '+')) {
+            if (i + 1 < expr.size() && (std::isdigit(expr[i + 1]) || std::isalpha(expr[i + 1]) || expr[i + 1] == '(') && (expr[i] == '-' || expr[i] == '+')) {
                 size_t j = ++i;
                 if (std::isdigit(expr[i])) {
                     while (j < expr.size() && (std::isdigit(expr[j]) || expr[j] == '.'))
@@ -183,11 +184,8 @@ bool Token::ParseToToken(std::string &expr, Tokens &tokens, ExpressionType type)
             return false;
         }
     }
-    if (type != ExpressionType::FUNCTION_EXPR) {
-        std::cout << "oui" << std::endl;
-        printTable(tokens);
-        ComplexHandler(tokens);
-    }
+    if (type != ExpressionType::FUNCTION_EXPR)
+        complexHandler(tokens);
     return true;
 }
 

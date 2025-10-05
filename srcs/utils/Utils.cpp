@@ -35,9 +35,8 @@ bool hasVariable(std::vector<Token> &tokens){
 
 std::string str_toupper(std::string str) {
     std::string new_str = "";
-    for(size_t i = 0; i < str.size(); i++) {
+    for(size_t i = 0; i < str.size(); i++)
         new_str.push_back(std::toupper(str[i]));
-    }
     return new_str;
 }
 
@@ -53,13 +52,45 @@ bool isInteger(double x) {
     return static_cast<long long>(x) == x;
 }
 
-void printFormat(Value &val) {
+std::string printFormat(Value &val) {
+    std::ostringstream oss;
+    if (val.type == SYMBOLIC) {
+        bool first = true;
+        for (auto& [var, coeff] : val.symbolic.coeffs) {
+            if (coeff == 0) continue;
+            // Handle sign and separator
+            if (!first) oss << (coeff > 0 ? " + " : " - ");
+            else if (coeff < 0) oss << "-";
+            first = false;
+            // Print coefficient (skip if 1 or -1)
+            double abs_coeff = std::abs(coeff);
+            if (abs_coeff != 1) {
+                // If int, no decimals; else, 1 decimal max
+                if (std::floor(abs_coeff) == abs_coeff)
+                    oss << static_cast<int>(abs_coeff);
+                else
+                    oss << std::fixed << std::setprecision(2) << abs_coeff;
+                oss << " * ";  // Ajouter le * entre le coeff et la variable
+            }
+            oss << var;
+        }
+        // Affichage de la constante
+        if (val.symbolic.constant != 0 || first) {
+            if (!first) oss << (val.symbolic.constant > 0 ? " + " : " - ");
+            else if (val.symbolic.constant < 0) oss << "-";
+            if (std::floor(std::abs(val.symbolic.constant)) == std::abs(val.symbolic.constant))
+                oss << static_cast<int>(std::abs(val.symbolic.constant));
+            else
+                oss << std::fixed << std::setprecision(2) << std::abs(val.symbolic.constant);
+        }
+        return oss.str();
+    }
     if (val.type == ValueType::MATRIX)
         val.matrix.printMatrice();
-    else if (val.type == ValueType::SCALAR)
-        std::cout << val.scalar << std::endl;
-    else if (val.type == ValueType::COMPLEX)
-        std::cout << val.cplx << std::endl;
+    else if (val.type == ValueType::SCALAR) { oss << val.scalar; return oss.str(); }
+    else if (val.type == ValueType::COMPLEX) { oss << val.cplx; return oss.str(); }
+
+    return "";
 }
 
 std::string ReplaceAll(std::string str, const std::string& from, const std::string& to) {
@@ -93,4 +124,10 @@ std::string betterPrint(std::string str) {
         }
     }
     return str;
+}
+
+std::string &NoSpace(std::string str) {
+    std::string &res = str;
+    res.erase(remove(res.begin(), res.end(), ' '), res.end());
+    return res;
 }
