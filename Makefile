@@ -1,5 +1,5 @@
 NAME		:=	computorv2
-NAME_BONUS	:=	computor_bonus
+NAME_BONUS	:=	computorv2_bonus
 
 SRCS		:= 	main.cpp \
 				Token.cpp \
@@ -9,10 +9,15 @@ SRCS		:= 	main.cpp \
 				utils/Utils.cpp \
 				utils/Debug.cpp \
 
-SRCS_BONUS	:=	Polynome_bonus.cpp \
-				main_bonus.cpp \
+SRCS_BONUS	:= 	main_bonus.cpp \
+				Token_bonus.cpp \
+				Rpn_bonus.cpp \
+				Polynome_bonus.cpp \
+				Computor_bonus.cpp \
+				utils/Utils_bonus.cpp \
+				utils/Debug_bonus.cpp \
 
-DIR			:=	srcs/
+DIR			:=	srcs/manda/
 
 DIR_BONUS	:=	srcs/bonus/
 
@@ -24,7 +29,7 @@ OBJS_BONUS	:=	$(SRCS_BONUS:%.cpp=$(BUILD_DIR)%.o)
 
 CC			:= c++
 
-FLAGS 		:= -Wall -Werror -Wextra -g -I ./includes/
+FLAGS 		:= -Wall -Werror -Wextra -g -I ./includes/manda/
 FLAGS_BONUS := -Wall -Werror -Wextra -g -I ./includes/bonus/
 
 TPUT 					= tput -T xterm-256color
@@ -67,7 +72,7 @@ val :
 	@bash -c 'valgrind --leak-check=full --leak-check=full --suppressions=readline.supp ./computorv2'
 
 bonus: ${OBJS_BONUS}
-	@${CC} ${FLAGS_BONUS} -o ${NAME_BONUS} ${OBJS_BONUS}
+	@${CC} ${FLAGS_BONUS} -o ${NAME_BONUS} ${OBJS_BONUS} -lreadline
 	@printf "$(_BOLD)$(NAME_BONUS)$(_RESET) compiled $(_GREEN)$(_BOLD)successfully$(_RESET)\n\n"
 
 clean:

@@ -1,4 +1,4 @@
-#include "Computor.hpp"
+#include <Computor_bonus.hpp>
 
 Value apply_symbolic_scalar_operation(const Value &a, const Value &b, const std::string &op) {
     if (a.type != ValueType::SYMBOLIC || b.type != ValueType::SCALAR) {

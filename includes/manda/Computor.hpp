@@ -12,9 +12,11 @@
 # include <iomanip>
 # include <sstream>
 # include "Token.hpp"
-# include "Polynome_bonus.hpp"
+# include "Polynome.hpp"
 # include "Utils.hpp"
 # include "MathUtils.hpp"
+
+# define DEBUG_MODE 0
 
 class Computor {
 

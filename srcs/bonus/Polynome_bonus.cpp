@@ -1,4 +1,4 @@
-#include "Polynome_bonus.hpp"
+#include <Polynome_bonus.hpp>
 
 Polynome::Polynome(std::string expr) : polynome_degree(0)
 {

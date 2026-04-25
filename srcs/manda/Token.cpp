@@ -1,8 +1,6 @@
-#include "Computor.hpp"
+#include <Computor.hpp>
 
-#include "Computor.hpp"
-
-int Token::matriceHandler(std::string expr, Tokens &tokens) { 
+    int Token::matriceHandler(std::string expr, Tokens &tokens) { 
     std::regex reg_expr("(\\[\\[[-+]?([0-9.]+)(,[-+]?[0-9.]+)*\\](;\\[([-+]?[0-9.]+)(,[-+]?[0-9.]+)*\\])*\\])");
     std::smatch matchs;
     if (std::regex_search(expr, matchs, reg_expr))

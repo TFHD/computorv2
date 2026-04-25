@@ -1,4 +1,4 @@
-#include "Computor.hpp"
+#include <Computor.hpp>
 
 Computor::Computor(void) {}
 Computor::~Computor(void) {}
@@ -67,7 +67,6 @@ bool Computor::functionHandler(std::string &name, std::string &expr, data &data)
     std::regex name_expr("^([a-zA-Z]+)(\\()([a-zA-Z]+)(\\))$");
     if (std::regex_match(name, name_expr)) {
         data.type = FUNCTION_EXPR;
-        std::cout << "Function found: " << name << std::endl;
         auto words_begin = std::sregex_iterator(name.begin(), name.end(), name_expr);
         auto words_end = std::sregex_iterator();
         std::smatch match = *words_begin;
@@ -91,7 +90,8 @@ bool Computor::functionHandler(std::string &name, std::string &expr, data &data)
         try {
             Token::parseToToken(expr, data.tokens, FUNCTION_EXPR);
             extractVariables(data.tokens);
-            printTable(data.tokens);
+            if (DEBUG_MODE)
+                printTable(data.tokens);
             Value val = evalRPN(Token::toRPN(data.tokens));
             data.expr = printFormat(val);
             std::cout << data.expr << std::endl;
@@ -119,7 +119,8 @@ void Computor::polynomeHandler(std::string &name, Tokens &tokens) {
                 varFunction = nameTokens[i].functionVar;
         }
         extractVariables(nameTokens);
-        printTable(nameTokens);
+        if (DEBUG_MODE)
+            printTable(nameTokens);
         std::string literal = "";
         literal = Token::tokenToString(nameTokens);
         literal.push_back('=');
@@ -259,7 +260,8 @@ void Computor::parsingExpr(std::string &text) {
     if (data.type == ExpressionType::FUNCTION_EXPR) { return; }
     if (!Token::parseToToken(expr, data.tokens, RATIONAL_EXPR)) { std::cout << "invalid expression" << std::endl; return; }
     
-    printTable(data.tokens);
+    if (DEBUG_MODE)
+        printTable(data.tokens);
     if (!hasVariable(data.tokens)) { if (!notVariableHandler(data, name)) return ; }
     else { if (!variableHandler(data, name)) return; }
 

@@ -1,4 +1,4 @@
-#include "Computor.hpp"
+#include <Computor.hpp>
 
 std::string typeToString(int type) {
     if (!type)
