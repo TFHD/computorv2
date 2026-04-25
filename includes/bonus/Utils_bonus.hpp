@@ -58,7 +58,7 @@ std::string printFormat(Value &val);
 std::string typeToString(int type);
 void        printTable(const std::vector<Token>& tokens);
 std::string betterPrint(std::string str);
-std::string &NoSpace(std::string str);
+std::string NoSpace(std::string str);
 
 
 #endif

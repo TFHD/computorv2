@@ -29,8 +29,8 @@ OBJS_BONUS	:=	$(SRCS_BONUS:%.cpp=$(BUILD_DIR)%.o)
 
 CC			:= c++
 
-FLAGS 		:= -Wall -Werror -Wextra -g -I ./includes/manda/
-FLAGS_BONUS := -Wall -Werror -Wextra -g -I ./includes/bonus/
+FLAGS 		:= -Wall -Werror -Wextra -g -I ./includes/manda/ -std=c++20
+FLAGS_BONUS := -Wall -Werror -Wextra -g -I ./includes/bonus/ -std=c++20
 
 TPUT 					= tput -T xterm-256color
 _RESET 					:= $(shell $(TPUT) sgr0)

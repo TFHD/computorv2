@@ -126,8 +126,7 @@ std::string betterPrint(std::string str) {
     return str;
 }
 
-std::string &NoSpace(std::string str) {
-    std::string &res = str;
-    res.erase(remove(res.begin(), res.end(), ' '), res.end());
-    return res;
+std::string NoSpace(std::string str) {
+    str.erase(remove(str.begin(), str.end(), ' '), str.end());
+    return str;
 }
