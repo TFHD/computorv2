@@ -139,8 +139,14 @@ Value apply_minus(const Value &a, const Value &b) {
 Value apply_times(const Value &a, const Value &b) {
     if (a.type == ValueType::SCALAR && b.type == ValueType::SCALAR)
         return Value(a.scalar * b.scalar);
-    if (a.type == ValueType::MATRIX && b.type == ValueType::MATRIX)
-        return Value(a.matrix * b.matrix);
+    if (a.type == ValueType::MATRIX && b.type == ValueType::SCALAR)
+        return Value(a.matrix * b.scalar);
+    if (a.type == ValueType::SCALAR && b.type == ValueType::MATRIX)
+        return Value(a.scalar * b.matrix);
+    if (a.type == ValueType::MATRIX && b.type == ValueType::COMPLEX)
+        return Value(a.matrix * b.cplx);
+    if (a.type == ValueType::COMPLEX && b.type == ValueType::MATRIX)
+        return Value(a.cplx * b.matrix);
     if (a.type == ValueType::SCALAR && b.type == ValueType::COMPLEX)
         return Value(a.scalar * b.cplx);
     if (a.type == ValueType::COMPLEX && b.type == ValueType::SCALAR)
@@ -185,6 +191,8 @@ Value apply_div(const Value &a, const Value &b) {
     }
     if (a.type == ValueType::MATRIX && b.type == ValueType::SCALAR) 
         return Value(a.matrix / b.scalar);
+    if (a.type == ValueType::MATRIX && b.type == ValueType::COMPLEX)
+        return Value(a.matrix / b.cplx);
     if (a.type == ValueType::SCALAR && b.type == ValueType::COMPLEX)
         return Value(a.scalar / b.cplx);
     if (a.type == ValueType::COMPLEX && b.type == ValueType::SCALAR)
@@ -207,6 +215,11 @@ Value apply_div(const Value &a, const Value &b) {
 Value apply_exp(const Value &a, const Value &b) {
     if (a.type == ValueType::SCALAR && b.type == ValueType::SCALAR)
         return Value(Math::pow(a.scalar, b.scalar));
+    if (a.type == ValueType::COMPLEX && b.type == ValueType::SCALAR) {
+        if (std::floor(b.scalar) != b.scalar)
+            throw std::runtime_error("Error exponentiation");
+        return Value(a.cplx.pow(static_cast<int>(b.scalar)));
+    }
     if (a.type == ValueType::SYMBOLIC && b.type == ValueType::SCALAR) {
         if (b.scalar == 0) {
             SymbolicExpr res;
@@ -266,10 +279,8 @@ Value apply_op(const Value &a, const Value &b, char op) {
     case '^':
         return apply_exp(a, b);
     case '&':
-        if (a.type == ValueType::MATRIX && b.type == ValueType::SCALAR)
-            return Value(a.matrix * b.scalar);
-        if (a.type == ValueType::SCALAR && b.type == ValueType::MATRIX)
-            return Value(a.scalar * b.matrix);
+        if (a.type == ValueType::MATRIX && b.type == ValueType::MATRIX)
+            return Value(a.matrix * b.matrix);
         throw std::runtime_error("Error multiplication");
     }
     throw std::runtime_error("Unknown operator");

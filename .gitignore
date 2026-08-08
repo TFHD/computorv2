@@ -1,0 +1,5 @@
+.build/
+.clangd
+computorv2
+computorv2_bonus
+compile_commands.json

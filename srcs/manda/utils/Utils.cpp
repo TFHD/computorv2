@@ -84,9 +84,11 @@ std::string printFormat(Value &val) {
                 oss << std::fixed << std::setprecision(2) << std::abs(val.symbolic.constant);
         }
         return oss.str();
-    }
-    if (val.type == ValueType::MATRIX)
+    } 
+    if (val.type == ValueType::MATRIX) {
         val.matrix.printMatrice();
+        return val.matrix.getMatString();
+    }
     else if (val.type == ValueType::SCALAR) { oss << val.scalar; return oss.str(); }
     else if (val.type == ValueType::COMPLEX) { oss << val.cplx; return oss.str(); }
 
@@ -128,5 +130,6 @@ std::string betterPrint(std::string str) {
 
 std::string NoSpace(std::string str) {
     str.erase(remove(str.begin(), str.end(), ' '), str.end());
+    str.erase(remove(str.begin(), str.end(), '\t'), str.end());
     return str;
 }

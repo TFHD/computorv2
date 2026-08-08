@@ -46,6 +46,25 @@ class Complex {
         Complex operator+(double d) const { return Complex(this->re + d, this->im); }
         Complex operator-(double d) const { return Complex(this->re - d, this->im); }
 
+        Complex pow(int e) const {
+            if (e == 0)
+                return Complex(1, 0);
+            bool neg = e < 0;
+            if (neg)
+                e = -e;
+            Complex res(1, 0);
+            Complex base = *this;
+            while (e > 0) {
+                if (e & 1)
+                    res = res * base;
+                base = base * base;
+                e >>= 1;
+            }
+            if (neg)
+                return 1.0 / res;
+            return res;
+        }
+
         friend Complex operator*(double d, const Complex& cplx) { return cplx * d; }
         friend Complex operator+(double d, const Complex& cplx) { return cplx + d; }
         friend Complex operator-(double d, const Complex& cplx) { return Complex(d - cplx.re, -cplx.im); }

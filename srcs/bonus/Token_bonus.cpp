@@ -1,38 +1,119 @@
 #include <Computor_bonus.hpp>
 
-    int Token::matriceHandler(std::string expr, Tokens &tokens) { 
-    std::regex reg_expr("(\\[\\[[-+]?([0-9.]+)(,[-+]?[0-9.]+)*\\](;\\[([-+]?[0-9.]+)(,[-+]?[0-9.]+)*\\])*\\])");
-    std::smatch matchs;
-    if (std::regex_search(expr, matchs, reg_expr))
-    {
-        tokens.push_back({MATRICE, matchs[1].str()});
-        int last_tkn = tokens.size() - 1;
-        int str_size = matchs[1].str().size();
-        std::regex sub_expr(R"(\[[-+]?[0-9.]+(,[-+]?[[0-9.]+)*\])");
-        std::string match_str = matchs[1].str();
-        auto sub_begin = std::sregex_iterator(match_str.begin(), match_str.end(), sub_expr);
-        auto sub_end = std::sregex_iterator();
-        int k = 0;
-        for (std::sregex_iterator i = sub_begin; i != sub_end; ++i) {
-            std::smatch match = *i;
-            for (size_t j = 0; j < match.str().size(); j++) {
-                std::string num = "";
-                if (std::isdigit(match.str()[j]) || match.str()[j] == '+' || match.str()[j] == '-') {
-                    size_t j_copy = j++;
-                    while (j < match.str().size() && (std::isdigit(match.str()[j]) || match.str()[j] == '.'))
-                        ++j;
-                    num = match.str().substr(j_copy, j - j_copy);
-                    if ((int)tokens[last_tkn].mat.getMat().size() <= k) {
-                        tokens[last_tkn].mat.getMat().resize(k + 1);
-                    }
-                    tokens[last_tkn].mat.getMat()[k].push_back(std::strtod(num.c_str(), 0));
-                }
+static Complex parseMatrixCell(const std::string &raw) {
+    std::string s;
+    for (char c : raw)
+        if (c != ' ')
+            s.push_back(c);
+
+    if (s.empty())
+        throw std::runtime_error("Empty matrix cell");
+
+    if (s.back() == 'i') {
+        s.pop_back();
+        if (!s.empty() && s.back() == '*')
+            s.pop_back();
+
+        int sep = -1;
+        for (int i = (int)s.size() - 1; i >= 1; --i) {
+            if (s[i] == '+' || s[i] == '-') {
+                sep = i;
+                break;
             }
-            k++;
         }
-        return str_size;
+        if (sep >= 0) {
+            double re = std::strtod(s.substr(0, sep).c_str(), 0);
+            std::string imPart = s.substr(sep);
+            double im = (imPart == "+" || imPart == "-")
+                ? (imPart == "+" ? 1.0 : -1.0)
+                : std::strtod(imPart.c_str(), 0);
+            return Complex(re, im);
+        }
+        if (s.empty() || s == "+")
+            return Complex(0, 1);
+        if (s == "-")
+            return Complex(0, -1);
+        return Complex(0, std::strtod(s.c_str(), 0));
     }
-    return 0;
+    return Complex(std::strtod(s.c_str(), 0), 0);
+}
+
+int Token::matriceHandler(std::string expr, Tokens &tokens) {
+    if (expr.size() < 4 || expr[0] != '[' || expr[1] != '[')
+        return 0;
+
+    int depth = 0;
+    size_t end = 0;
+    for (; end < expr.size(); ++end) {
+        if (expr[end] == '[')
+            ++depth;
+        else if (expr[end] == ']') {
+            --depth;
+            if (depth == 0) {
+                ++end;
+                break;
+            }
+        }
+    }
+    if (depth != 0)
+        return 0;
+
+    std::string match_str = expr.substr(0, end);
+    std::string inner = match_str.substr(1, match_str.size() - 2);
+
+    Token tokenMatrice = {MATRICE, match_str};
+    size_t cols = 0;
+    int k = 0;
+
+    try {
+        for (size_t i = 0; i < inner.size();) {
+            if (inner[i] == '[') {
+                size_t j = i + 1;
+                while (j < inner.size() && inner[j] != ']')
+                    ++j;
+                if (j >= inner.size())
+                    return 0;
+
+                std::string row = inner.substr(i + 1, j - i - 1);
+                std::vector<std::string> cells;
+                std::string cur;
+                for (char c : row) {
+                    if (c == ',') {
+                        cells.push_back(cur);
+                        cur.clear();
+                    } else
+                        cur.push_back(c);
+                }
+                cells.push_back(cur);
+
+                if (k == 0)
+                    cols = cells.size();
+                else if (cells.size() != cols) {
+                    std::cout << "Matrice size is not correct" << std::endl;
+                    return 0;
+                }
+
+                tokenMatrice.mat.getMat().resize(k + 1);
+                for (const std::string &cell : cells)
+                    tokenMatrice.mat.getMat()[k].push_back(parseMatrixCell(cell));
+
+                ++k;
+                i = j + 1;
+                if (i < inner.size() && inner[i] == ';')
+                    ++i;
+            } else if (inner[i] == ';') ++i;
+            else if (inner[i] == ' ') ++i;
+            else return 0;
+        }
+    } catch (const std::exception &) {
+        return 0;
+    }
+
+    if (k == 0)
+        return 0;
+
+    tokens.push_back(tokenMatrice);
+    return static_cast<int>(match_str.size());
 }
 
 bool Token::complexHandler(Tokens &tokens) {
@@ -50,34 +131,46 @@ bool Token::complexHandler(Tokens &tokens) {
     
     Complex cplx(0, 1);
 
-    int operatorIndex = complexIndex;
-    int numberIndex = complexIndex;
+    int operatorIndex = -1;
+    int numberIndex = -1;
 
-    for (int i = operatorIndex; i > -1; i--) {
+    for (int i = complexIndex - 1; i >= 0; --i) {
+        if (tokens[i].type == TokenType::PAREN_LEFT || tokens[i].type == TokenType::PAREN_RIGHT)
+            continue;
         if (tokens[i].type == TokenType::OPERATOR) {
             operatorIndex = i;
             break;
         }
+        break;
     }
-    for (int i = numberIndex; i > -1; i--) {
-        if (tokens[i].type == TokenType::NUMBER) {
-            numberIndex = i;
+    if (operatorIndex >= 0 && tokens[operatorIndex].op == '*') {
+        for (int i = operatorIndex - 1; i >= 0; --i) {
+            if (tokens[i].type == TokenType::PAREN_LEFT || tokens[i].type == TokenType::PAREN_RIGHT)
+                continue;
+            if (tokens[i].type == TokenType::NUMBER) {
+                numberIndex = i;
+                break;
+            }
             break;
         }
     }
-    if (numberIndex >= 0 && tokens[operatorIndex].op == '*') {
-        cplx.setIm(tokens[numberIndex].value);
+
+    bool powered = false;
+    for (size_t i = complexIndex + 1; i < tokens.size(); ++i) {
+        if (tokens[i].type == TokenType::PAREN_RIGHT)
+            continue;
+        powered = (tokens[i].type == TokenType::OPERATOR && tokens[i].op == '^');
+        break;
+    }
+
+    if (!powered && numberIndex >= 0 && operatorIndex >= 0 && tokens[operatorIndex].op == '*') {
+        double im = tokens[numberIndex].value;
+        cplx.setIm(im);
         tokens.erase(tokens.begin() + numberIndex, tokens.begin() + complexIndex + 1);
         tokens.insert(tokens.begin() + numberIndex, {{PAREN_LEFT},{COMPLEXS, std::to_string(cplx.getIm()).append("i"), "0", 0, '0', cplx}});
-    } else if (numberIndex >= 0 && tokens[operatorIndex].op == '+') {
-        tokens.erase(tokens.begin() + complexIndex);
-        tokens.insert(tokens.begin() + complexIndex, {COMPLEXS, std::to_string(cplx.getIm()).append("i"), "0", 0, '0', cplx});
-
-    } else if (numberIndex == complexIndex || operatorIndex == complexIndex) {
-        tokens.erase(tokens.begin() + complexIndex);
-        tokens.insert(tokens.begin() + complexIndex, {COMPLEXS, std::to_string(cplx.getIm()).append("i"), "0", 0, '0', cplx});
     } else {
-        return false;
+        tokens.erase(tokens.begin() + complexIndex);
+        tokens.insert(tokens.begin() + complexIndex, {COMPLEXS, std::to_string(cplx.getIm()).append("i"), "0", 0, '0', cplx});
     }
     complexHandler(tokens);
     return true;

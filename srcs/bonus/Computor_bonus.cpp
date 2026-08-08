@@ -202,6 +202,7 @@ bool Computor::notVariableHandler(data &data, std::string &name) {
 
     if (!isAlphaString(name) && data.type == ExpressionType::RATIONAL_EXPR)
         { std::cout << "a variable can contain only letter" << std::endl; return false; }
+    if (name == "I") { std::cout << "I is a complex number" << std::endl; return false; }
     if (data.type == ExpressionType::POLYNOMIAL_EXPR) { polynomeHandler(name, data.tokens); return false; }
     
     forRPNRead = Token::toRPN(data.tokens);
@@ -209,7 +210,8 @@ bool Computor::notVariableHandler(data &data, std::string &name) {
     try {
         Value val = evalRPN(forRPNRead);
         data.expr = printFormat(val);
-        std::cout << data.expr << std::endl;
+        if (val.type != ValueType::MATRIX)
+            std::cout << data.expr << std::endl;
     } catch (const std::exception &e) {
         std::cout << e.what() << std::endl;
         this->map.extract(str_toupper(name));
@@ -232,7 +234,8 @@ bool Computor::variableHandler(data &data, std::string &name) {
         forRPNRead = Token::toRPN(TokenDataCopy);
         Value val = evalRPN(forRPNRead);
         data.expr = printFormat(val);
-        std::cout << data.expr << std::endl;
+        if (val.type != ValueType::MATRIX)
+            std::cout << data.expr << std::endl;
     } catch (const std::exception &e) {
         std::cout << e.what() << std::endl;
         this->map.extract(str_toupper(name));
@@ -251,7 +254,10 @@ void Computor::parsingExpr(std::string &text) {
 
     std::string name = text.substr(0, it);
     std::string expr = text.substr(it + 1, text.length());
-    if (!expr.length() || !CheckParenthesis(text)) { std::cout << "invalid expression" << std::endl; return; }
+    if (!expr.length() ||
+        !name.length() ||
+        !CheckParenthesis(text)
+    ) { std::cout << "invalid expression" << std::endl; return; }
     
     data data;
     GetTypeExpression(data, expr, name);
