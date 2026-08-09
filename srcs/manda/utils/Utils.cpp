@@ -120,6 +120,13 @@ bool CheckParenthesis(std::string &expr) {
 std::string betterPrint(std::string str) {
     for (size_t i = 0; i < str.size(); i ++) {
         if ((isOperator(str[i]) || str[i] == '=') && str[i] != '^') {
+            if (str[i] == '+' || str[i] == '-') {
+                size_t j = i;
+                while (j > 0 && str[j - 1] == ' ')
+                    --j;
+                if (j == 0 || str[j - 1] == '=' || isOperator(str[j - 1]) || str[j - 1] == '(')
+                    continue;
+            }
             str.insert(str.begin() + i, ' ');
             str.insert(str.begin() + i + 2, ' ');
             i += 2;

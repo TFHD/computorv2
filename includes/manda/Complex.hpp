@@ -94,13 +94,24 @@ class Complex {
             this->im = im;
         }
 
+        static constexpr double EPSILON = 1e-10;
+
+        static double snap(double x) {
+            return (x > -EPSILON && x < EPSILON) ? 0.0 : x;
+        }
+
+        Complex cleaned() const {
+            return Complex(snap(re), snap(im));
+        }
+
         friend std::ostream &operator<<(std::ostream &o, const Complex &cplx) {
-            if (cplx.getIm() == 0)
-                o << cplx.getRe();
-            else if (cplx.getIm() < 0)
-                o << cplx.getRe() << " - " << -cplx.getIm() << "i";
-            else if (cplx.getIm() > 0)
-                o << cplx.getRe() << " + " << cplx.getIm() << "i";
+            Complex c = cplx.cleaned();
+            if (c.getIm() == 0)
+                o << c.getRe();
+            else if (c.getIm() < 0)
+                o << c.getRe() << " - " << -c.getIm() << "i";
+            else
+                o << c.getRe() << " + " << c.getIm() << "i";
             return (o);
         }
 };

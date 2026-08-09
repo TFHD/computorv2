@@ -1,13 +1,28 @@
 #include <Computor_bonus.hpp>
 
-static Complex parseMatrixCell(const std::string &raw) {
-    std::string s;
-    for (char c : raw)
-        if (c != ' ')
-            s.push_back(c);
-
+static bool tryParseFullComplex(std::string s, Complex &out) {
     if (s.empty())
-        throw std::runtime_error("Empty matrix cell");
+        return false;
+
+    bool allAlpha = true;
+    for (char c : s) {
+        if (!std::isalpha(static_cast<unsigned char>(c))) {
+            allAlpha = false;
+            break;
+        }
+    }
+    if (allAlpha) {
+        if (s == "i") {
+            out = Complex(0, 1);
+            return true;
+        }
+        return false;
+    }
+
+    for (char c : s) {
+        if (std::isalpha(static_cast<unsigned char>(c)) && c != 'i')
+            return false;
+    }
 
     if (s.back() == 'i') {
         s.pop_back();
@@ -22,20 +37,74 @@ static Complex parseMatrixCell(const std::string &raw) {
             }
         }
         if (sep >= 0) {
-            double re = std::strtod(s.substr(0, sep).c_str(), 0);
+            char *endRe = nullptr;
+            double re = std::strtod(s.substr(0, sep).c_str(), &endRe);
+            if (!endRe || *endRe != '\0')
+                return false;
             std::string imPart = s.substr(sep);
             double im = (imPart == "+" || imPart == "-")
                 ? (imPart == "+" ? 1.0 : -1.0)
                 : std::strtod(imPart.c_str(), 0);
-            return Complex(re, im);
+            out = Complex(re, im);
+            return true;
         }
-        if (s.empty() || s == "+")
-            return Complex(0, 1);
-        if (s == "-")
-            return Complex(0, -1);
-        return Complex(0, std::strtod(s.c_str(), 0));
+        if (s.empty() || s == "+") {
+            out = Complex(0, 1);
+            return true;
+        }
+        if (s == "-") {
+            out = Complex(0, -1);
+            return true;
+        }
+        char *end = nullptr;
+        double im = std::strtod(s.c_str(), &end);
+        if (!end || *end != '\0')
+            return false;
+        out = Complex(0, im);
+        return true;
     }
-    return Complex(std::strtod(s.c_str(), 0), 0);
+
+    char *end = nullptr;
+    double v = std::strtod(s.c_str(), &end);
+    if (end && end != s.c_str() && *end == '\0') {
+        out = Complex(v, 0);
+        return true;
+    }
+    return false;
+}
+
+static Complex parseMatrixCell(const std::string &raw) {
+    std::string s;
+    for (char c : raw) {
+        if (c != ' ')
+            s.push_back(c);
+    }
+    if (s.empty())
+        throw std::runtime_error("Empty matrix cell");
+
+    Complex c;
+    if (!tryParseFullComplex(s, c))
+        throw std::runtime_error("Matrix cell must be a number or complex");
+    return c;
+}
+
+static std::vector<std::string> splitMatrixRowCells(const std::string &row) {
+    std::vector<std::string> cells;
+    std::string cur;
+    int depth = 0;
+    for (char c : row) {
+        if (c == '(')
+            ++depth;
+        else if (c == ')')
+            --depth;
+        if (c == ',' && depth == 0) {
+            cells.push_back(cur);
+            cur.clear();
+        } else
+            cur.push_back(c);
+    }
+    cells.push_back(cur);
+    return cells;
 }
 
 int Token::matriceHandler(std::string expr, Tokens &tokens) {
@@ -75,16 +144,7 @@ int Token::matriceHandler(std::string expr, Tokens &tokens) {
                     return 0;
 
                 std::string row = inner.substr(i + 1, j - i - 1);
-                std::vector<std::string> cells;
-                std::string cur;
-                for (char c : row) {
-                    if (c == ',') {
-                        cells.push_back(cur);
-                        cur.clear();
-                    } else
-                        cur.push_back(c);
-                }
-                cells.push_back(cur);
+                std::vector<std::string> cells = splitMatrixRowCells(row);
 
                 if (k == 0)
                     cols = cells.size();
@@ -184,9 +244,33 @@ std::string Token::tokenToString(Tokens &tokens) {
             oss << tokens[i].value;
             res.append(oss.str());
         } else if (tokens[i].type == TokenType::OPERATOR) {
-            res.push_back(tokens[i].op);
+            if (i + 1 < tokens.size() && tokens[i + 1].type == TokenType::NUMBER
+                && tokens[i + 1].value < 0
+                && (tokens[i].op == '+' || tokens[i].op == '-')) {
+                res.push_back(tokens[i].op == '+' ? '-' : '+');
+                std::ostringstream oss;
+                oss << -tokens[i + 1].value;
+                res.append(oss.str());
+                ++i;
+            } else {
+                res.push_back(tokens[i].op);
+            }
         } else if (tokens[i].type == TokenType::VARIABLE) {
             res.append(tokens[i].var);
+        } else if (tokens[i].type == TokenType::FUNCTION) {
+            std::string fname = tokens[i].var;
+            if (!fname.empty() && fname.back() == '(')
+                fname.pop_back();
+            res.append(fname);
+            res.push_back('(');
+            res.append(tokens[i].functionVar);
+            res.push_back(')');
+        } else if (tokens[i].type == TokenType::MATRICE) {
+            res.append(tokens[i].mat.getMatString());
+        } else if (tokens[i].type == TokenType::COMPLEXS) {
+            std::ostringstream oss;
+            oss << tokens[i].cplx_value;
+            res.append(oss.str());
         }
     }
     return res;

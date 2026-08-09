@@ -38,7 +38,7 @@ class Polynome {
         double getB(void);
         double getC(void);
         int getPolynomeDegree(void);
-        void printReducedForme(void);
+        void printReducedForm(void);
         void printSolutions(void);
 };
 

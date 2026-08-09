@@ -1,5 +1,5 @@
-#ifndef POLYNOME_HPP
-# define POLYNOME_HPP
+#ifndef POLYNOME_BONUS_HPP
+# define POLYNOME_BONUS_HPP
 
 # include <string>
 # include <iostream>
@@ -38,7 +38,7 @@ class Polynome {
         double getB(void);
         double getC(void);
         int getPolynomeDegree(void);
-        void printReducedForme(void);
+        void printReducedForm(void);
         void printSolutions(void);
 };
 

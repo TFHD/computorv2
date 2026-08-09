@@ -72,6 +72,45 @@ Value apply_symbolic_symbolic_operation(const Value &a, const Value &b, const st
     return Value(res);
 }
 
+static std::string formatNonSymbolicAtom(const Value &v) {
+    std::ostringstream oss;
+    if (v.type == ValueType::SCALAR) {
+        if (std::floor(v.scalar) == v.scalar)
+            oss << static_cast<int>(v.scalar);
+        else
+            oss << v.scalar;
+        return oss.str();
+    }
+    if (v.type == ValueType::COMPLEX) {
+        oss << "(" << v.cplx << ")";
+        return oss.str();
+    }
+    if (v.type == ValueType::MATRIX)
+        return v.matrix.getMatString();
+    throw std::runtime_error("Error symbolic operation");
+}
+
+Value apply_symbolic_nonsymbolic_operation(const Value &sym, const Value &other, const std::string &op, bool symOnLeft) {
+    if (sym.type != ValueType::SYMBOLIC)
+        throw std::runtime_error("Error symbolic operation");
+    std::string otherStr = formatNonSymbolicAtom(other);
+    SymbolicExpr res;
+    if (sym.symbolic.coeffs.size() == 1 && sym.symbolic.constant == 0) {
+        auto var = sym.symbolic.coeffs.begin();
+        if (var->second == 1.0) {
+            res.coeffs[symOnLeft
+                ? var->first + " " + op + " " + otherStr
+                : otherStr + " " + op + " " + var->first] = 1;
+            return Value(res);
+        }
+    }
+    std::string expr = printFormat(const_cast<Value&>(sym));
+    res.coeffs[symOnLeft
+        ? "(" + expr + ") " + op + " " + otherStr
+        : otherStr + " " + op + " (" + expr + ")"] = 1;
+    return Value(res);
+}
+
 Value apply_plus(const Value &a, const Value &b) {
     if (a.type == ValueType::SCALAR && b.type == ValueType::SCALAR)
         return Value(a.scalar + b.scalar);
@@ -180,6 +219,14 @@ Value apply_times(const Value &a, const Value &b) {
         res.constant = b.symbolic.constant * a.scalar;
         return Value(res);
     }
+    if (a.type == ValueType::COMPLEX && b.type == ValueType::SYMBOLIC)
+        return apply_symbolic_nonsymbolic_operation(b, a, "*", false);
+    if (a.type == ValueType::SYMBOLIC && b.type == ValueType::COMPLEX)
+        return apply_symbolic_nonsymbolic_operation(a, b, "*", true);
+    if (a.type == ValueType::MATRIX && b.type == ValueType::SYMBOLIC)
+        return apply_symbolic_nonsymbolic_operation(b, a, "*", false);
+    if (a.type == ValueType::SYMBOLIC && b.type == ValueType::MATRIX)
+        return apply_symbolic_nonsymbolic_operation(a, b, "*", true);
     throw std::runtime_error("Error multiplication");
 }
 
@@ -220,6 +267,17 @@ Value apply_exp(const Value &a, const Value &b) {
             throw std::runtime_error("Error exponentiation");
         return Value(a.cplx.pow(static_cast<int>(b.scalar)));
     }
+    if (a.type == ValueType::MATRIX && b.type == ValueType::SCALAR) {
+        if (std::floor(b.scalar) != b.scalar)
+            throw std::runtime_error("Error exponentiation");
+        if (b.scalar == -1)
+            return Value(a.matrix.inverse());
+        return Value(a.matrix.pow(static_cast<int>(b.scalar)));
+    }
+    if (a.type == ValueType::MATRIX && b.type == ValueType::SYMBOLIC)
+        return apply_symbolic_nonsymbolic_operation(b, a, "^", false);
+    if (a.type == ValueType::COMPLEX && b.type == ValueType::SYMBOLIC)
+        return apply_symbolic_nonsymbolic_operation(b, a, "^", false);
     if (a.type == ValueType::SYMBOLIC && b.type == ValueType::SCALAR) {
         if (b.scalar == 0) {
             SymbolicExpr res;
@@ -229,9 +287,8 @@ Value apply_exp(const Value &a, const Value &b) {
         if (b.scalar == 1)
             return Value(a.symbolic);
 
-        if (b.scalar > 1 && std::floor(b.scalar) == b.scalar) {
+        if (std::floor(b.scalar) == b.scalar)
             return apply_symbolic_scalar_operation(a, b, "^");
-        }
         throw std::runtime_error("Error exponentiation");
     }
     if (a.type == ValueType::SCALAR && b.type == ValueType::SYMBOLIC)
@@ -281,6 +338,12 @@ Value apply_op(const Value &a, const Value &b, char op) {
     case '&':
         if (a.type == ValueType::MATRIX && b.type == ValueType::MATRIX)
             return Value(a.matrix * b.matrix);
+        if (a.type == ValueType::MATRIX && b.type == ValueType::SYMBOLIC)
+            return apply_symbolic_nonsymbolic_operation(b, a, "**", false);
+        if (a.type == ValueType::SYMBOLIC && b.type == ValueType::MATRIX)
+            return apply_symbolic_nonsymbolic_operation(a, b, "**", true);
+        if (a.type == ValueType::SYMBOLIC && b.type == ValueType::SYMBOLIC)
+            return apply_symbolic_symbolic_operation(a, b, "**");
         throw std::runtime_error("Error multiplication");
     }
     throw std::runtime_error("Unknown operator");

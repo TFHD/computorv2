@@ -5,9 +5,8 @@ Computor::~Computor(void) {}
 
 
 void Computor::insertInfosInMap(std::string &name, data &data) {
-    if (this->map.find(name) == this->map.end()) {
+    if (this->map.find(name) == this->map.end())
         this->map.insert({name, data});
-    }
     else {
         auto it = this->map.find(name);
         it->second = data;

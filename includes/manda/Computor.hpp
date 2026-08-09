@@ -16,7 +16,7 @@
 # include "Utils.hpp"
 # include "MathUtils.hpp"
 
-# define DEBUG_MODE 0
+# define DEBUG_MODE 1
 
 class Computor {
 

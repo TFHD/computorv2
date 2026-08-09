@@ -32,7 +32,7 @@ void Polynome::adaptExpr(std::string &expr)
             expr.insert(pos + 2, 1, '1');
         }
         pos = expr.find("X", i);
-        if (expr[pos - 1] != '*') {
+        if (pos - 1 >= 0 && expr[pos - 1] != '*') {
             expr.insert(pos, 1, '*');
             if (!std::isdigit(expr[pos - 1]))
                 expr.insert(pos, 1, '1');
@@ -41,7 +41,7 @@ void Polynome::adaptExpr(std::string &expr)
 
     for (int i = 0; i < (int)expr.length(); i++) {
         if (std::isdigit(expr[i])) {
-            if (i - 1 >= 0 && expr[i - 1] != '+' && !std::isdigit(expr[i - 1]))
+            if (i - 1 >= 0 && expr[i - 1] != '+' && expr[i - 1] != '-' && !std::isdigit(expr[i - 1]))
                 continue;
             if (i + 1 < (int)expr.length() && (expr[i + 1] == '*' || std::isdigit(expr[i + 1])))
                 continue;
@@ -53,18 +53,18 @@ void Polynome::adaptExpr(std::string &expr)
 int Polynome::regexExpr(std::string expr)
 {
     std::regex long_word_regex("^([-+][0-9.]+\\*X\\^[0-9.]+)+$");
-        std::string new_s = std::regex_replace(expr, long_word_regex, "[$&]");
-        if (new_s == expr)
-            return 1;
+    std::string new_s = std::regex_replace(expr, long_word_regex, "[$&]");
+    if (new_s == expr)
+        return 1;
     return 0;
 }
 
 void Polynome::convertCharToPolynome(std::string &expr)
 {
     expr.erase(remove(expr.begin(), expr.end(), ' '), expr.end());
+    adaptExpr(expr);
     if (strtol(expr.c_str(), 0, 0) >= 0 && expr[0] != '+')
         expr.insert(0, 1, '+');
-    adaptExpr(expr);
     if (regexExpr(expr))
         throw std::runtime_error("Error : invalid syntax !");
     searchPositions(expr, this->numbers);
@@ -81,9 +81,9 @@ int Polynome::parsingExpr(std::string expr)
 void Polynome::reducePolynome(std::string &expr)
 {
     expr.erase(remove(expr.begin(), expr.end(), ' '), expr.end());
+    adaptExpr(expr);
     if (strtol(expr.c_str(), 0, 0) >= 0 && expr[0] != '+')
         expr.insert(0, 1, '+');
-    adaptExpr(expr);
     if (regexExpr(expr))
         throw std::runtime_error("Error : invalid syntax !");
     searchPositions(expr, this->numbers_after);
@@ -137,6 +137,7 @@ double Polynome::my_sqrt(double x) {
 void Polynome::printSolutions(void)
 {  
     if (getPolynomeDegree() > 2) {
+        std::cout << "The polynomial degree is strictly greater than 2, I can't solve." << std::endl;
         return;
     }
     if (!getA() && !getB() && !getC()) {
@@ -178,15 +179,13 @@ void Polynome::printSolutions(void)
         if (pgcd1 == pgcd2 && (int)pow(my_sqrt(getB()), 2) == (int)getB() && (int)pow(sqrt_determinant, 2) == (int)-determinant)
             pgcds = pgcd1;
         if ((int)pow(sqrt_determinant, 2) == (int)-determinant) {
-            if (-getB())
-                std::cout << -getB() / pgcds << "/" << 2 * getA() / pgcds;
-            else
-                std::cout << -getB();
+            if (-getB()) std::cout << -getB() / pgcds << "/" << 2 * getA() / pgcds;
+            else std::cout << -getB();
+            
             std::cout << " + i" << my_sqrt(-determinant) / pgcds << "/" << 2 * getA() / pgcds << std::endl;
-            if (-getB())
-                std::cout << -getB() / pgcds << "/" << 2 * getA() / pgcds;
-            else
-                std::cout << -getB();
+            
+            if (-getB()) std::cout << -getB() / pgcds << "/" << 2 * getA() / pgcds;
+            else std::cout << -getB();
             std::cout << " - i" << my_sqrt(-determinant) / pgcds << "/" << 2 * getA() / pgcds << std::endl;
         }
         else {
@@ -266,7 +265,7 @@ void Polynome::printValuePositive(double value, std::string str, std::string bef
         std::cout << "-" << -value << str;
 }
 
-void Polynome::printReducedForme(void)
+void Polynome::printReducedForm(void)
 {
     std::cout << "Reduced form: ";
 
